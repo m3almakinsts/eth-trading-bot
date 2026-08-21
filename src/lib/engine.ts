@@ -8,7 +8,7 @@
  * dashboard immediately shows a rich paper history; every subsequent bar
  * is processed "live" as Binance closes it.
  */
-import { db } from "@/db";
+import { db, initDbTables } from "@/db";
 import { botState, trades, equitySnapshots } from "@/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
 import {
@@ -32,6 +32,7 @@ type TradeRow = typeof trades.$inferSelect;
 /* ------------------------------------------------------------------ */
 
 async function ensureState(): Promise<StateRow> {
+  await initDbTables();
   const rows = await db.select().from(botState).where(eq(botState.id, 1)).limit(1);
   if (rows.length > 0) return rows[0];
   const inserted = await db

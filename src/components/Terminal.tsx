@@ -5,11 +5,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShieldAlert, Wifi, WifiOff, Zap } from "lucide-react";
 import type { DashboardPayload } from "@/lib/engine";
 import { fmtPrice } from "@/lib/format";
+import dynamic from "next/dynamic";
 import Header from "./Header";
-import CandleChart from "./CandleChart";
-import EquityChart from "./EquityChart";
 import { PositionTicket, RegimeGauge, FiltersAndRisk, StatTiles } from "./Panels";
 import TradesTable from "./TradesTable";
+
+const CandleChart = dynamic(() => import("./CandleChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="label flex h-full items-center justify-center text-[10px]!">
+      Loading chart engine…
+    </div>
+  ),
+});
+
+const EquityChart = dynamic(() => import("./EquityChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="label flex h-full items-center justify-center text-[10px]!">
+      Loading equity curve…
+    </div>
+  ),
+});
 
 const POLL_MS = 10_000;
 
