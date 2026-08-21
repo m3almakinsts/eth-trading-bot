@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jbm), ui-monospace, monospace;
+
+  --color-ink: #050608;
+  --color-panel: #0a0c0f;
+  --color-panel2: #0e1115;
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-bull: #35f2a6;
+  --color-bear: #ff4d67;
+  --color-vio: #8b7cf7;
+  --color-amber: #f5b83d;
+  --color-mute: #5c6570;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: #e8ebee;
+  font-family: var(--font-display);
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(53, 242, 166, 0.25);
+}
+
+/* film-grain + grid terminal canvas */
+.terminal-bg {
+  background:
+    radial-gradient(1200px 600px at 70% -10%, rgba(139, 124, 247, 0.07), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(53, 242, 166, 0.05), transparent 60%),
+    var(--color-ink);
+}
+.terminal-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 80%);
+}
+
+.panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)) ,
+    var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+}
+
+.label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6b7480;
+  font-weight: 500;
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* status pulse dot */
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(53, 242, 166, 0.45); }
+  60% { box-shadow: 0 0 0 7px rgba(53, 242, 166, 0); }
+}
+.pulse-dot { animation: pulseDot 1.8s ease-in-out infinite; }
+@keyframes pulseAmber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 184, 61, 0.4); }
+  60% { box-shadow: 0 0 0 7px rgba(245, 184, 61, 0); }
+}
+.pulse-amber { animation: pulseAmber 2.2s ease-in-out infinite; }
+
+/* price tick flash */
+@keyframes flashUp { 0% { color: #35f2a6; } 100% { color: inherit; } }
+@keyframes flashDown { 0% { color: #ff4d67; } 100% { color: inherit; } }
+.flash-up { animation: flashUp 0.7s ease-out; }
+.flash-down { animation: flashDown 0.7s ease-out; }
+
+/* scanline sweep on the chart header */
+@keyframes sweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateX(220%); opacity: 0; }
+}
+.sweep { animation: sweep 4.5s linear infinite; }
+
+/* thin scrollbars */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* gauge needle transition */
+.needle { transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* kill switch banner glow */
+@keyframes killGlow {
+  0%, 100% { border-color: rgba(255, 77, 103, 0.5); }
+  50% { border-color: rgba(255, 77, 103, 0.95); }
+}
+.kill-glow { animation: killGlow 1.6s ease-in-out infinite; }
+
+/* lightweight-charts attribution hide (still linked in footer) */
+.tv-lightweight-charts { font-family: var(--font-mono) !important; }
