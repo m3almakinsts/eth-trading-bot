@@ -45,6 +45,7 @@ export async function initDbTables(): Promise<void> {
           id SERIAL PRIMARY KEY,
           is_running BOOLEAN NOT NULL DEFAULT false,
           kill_switch BOOLEAN NOT NULL DEFAULT false,
+          heartbeat_mins INTEGER NOT NULL DEFAULT 30,
           equity DOUBLE PRECISION NOT NULL DEFAULT 100000,
           initial_capital DOUBLE PRECISION NOT NULL DEFAULT 100000,
           peak_equity DOUBLE PRECISION NOT NULL DEFAULT 100000,
@@ -90,6 +91,10 @@ export async function initDbTables(): Promise<void> {
           equity DOUBLE PRECISION NOT NULL,
           pos_dir INTEGER NOT NULL DEFAULT 0
         );
+
+        -- Forward migration for databases created by earlier deploys.
+        ALTER TABLE bot_state
+          ADD COLUMN IF NOT EXISTS heartbeat_mins INTEGER NOT NULL DEFAULT 30;
       `);
     } catch (err) {
       console.error("Auto table initialization error:", err);

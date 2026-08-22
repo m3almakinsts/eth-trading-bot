@@ -12,16 +12,26 @@ import { fmtPct, fmtPrice, fmtQty, fmtRatio, fmtSignedUSD, fmtUSD } from "@/lib/
 export function PositionTicket({ position, price }: { position: PositionView | null; price: number | null }) {
   if (!position) {
     return (
-      <div className="panel p-4">
+      <div className="panel overflow-hidden p-4">
         <div className="flex items-center justify-between">
-          <span className="label">Open position</span>
-          <span className="label rounded border border-white/10 bg-white/4 px-2 py-0.5 text-zinc-400!">FLAT</span>
+          <div>
+            <div className="text-[12px] font-semibold text-zinc-100">Active trade</div>
+            <div className="mt-0.5 text-[9px] text-zinc-600">What the bot is holding right now</div>
+          </div>
+          <span className="friendly-chip text-zinc-500!">No position</span>
         </div>
-        <div className="mt-4 flex flex-col items-center py-3 text-center">
-          <Activity size={18} className="text-zinc-600" />
-          <div className="mt-2 text-sm font-medium text-zinc-300">Scanning for expansion</div>
-          <div className="label mt-1 max-w-[260px] text-[9px]! leading-relaxed! normal-case tracking-[0.06em]!">
-            waiting for ATR ratio &gt; 1.02 with channel break + volume ≥ 0.5× MA30
+        <div className="mt-3 flex items-center gap-3 rounded-xl border border-vio/8 bg-gradient-to-r from-vio/[0.055] to-transparent p-3">
+          <div className="relative grid h-11 w-11 flex-none place-items-center rounded-full border border-vio/15">
+            <span className="absolute inset-1 rounded-full border border-vio/10" />
+            <span className="h-2 w-2 rounded-full bg-vio/70 pulse-amber" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-[12px] font-medium text-zinc-300">
+              <Activity size={12} className="text-vio" /> Quietly scanning
+            </div>
+            <p className="mt-1 text-[9.5px] leading-relaxed text-zinc-600">
+              Waiting for ATR expansion, a clean channel break, and enough volume. Patience is part of the strategy.
+            </p>
           </div>
         </div>
       </div>
@@ -35,62 +45,61 @@ export function PositionTicket({ position, price }: { position: PositionView | n
   const riskAtStop = Math.abs(position.entryPrice - position.stopPrice) * position.qty;
 
   return (
-    <div className="panel p-4">
-      <div className="flex items-center justify-between">
-        <span className="label">Open position</span>
+    <div className="panel overflow-hidden p-4">
+      <span className={`absolute inset-x-0 top-0 h-px ${isLong ? "bg-gradient-to-r from-bull/80 to-transparent" : "bg-gradient-to-r from-bear/80 to-transparent"}`} />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[12px] font-semibold text-zinc-100">Active trade</div>
+          <div className="mt-0.5 text-[9px] text-zinc-600">Live, marked to the latest price</div>
+        </div>
         <div className="flex items-center gap-1.5">
-          <span className="label rounded border border-white/10 px-2 py-0.5 text-zinc-400! text-[9px]!">
-            {position.regime}
-          </span>
+          <span className="friendly-chip text-zinc-500!">{position.regime.toLowerCase()}</span>
           <span
-            className={`rounded border px-2 py-0.5 text-[10px] font-semibold tracking-widest ${
+            className={`rounded-full border px-2.5 py-1 text-[9px] font-semibold ${
               isLong
-                ? "border-bull/40 bg-bull/10 text-bull"
-                : "border-bear/40 bg-bear/10 text-bear"
+                ? "border-bull/25 bg-bull/8 text-bull"
+                : "border-bear/25 bg-bear/8 text-bear"
             }`}
           >
-            {isLong ? "LONG" : "SHORT"}
+            {isLong ? "▲ Long" : "▼ Short"}
           </span>
         </div>
       </div>
 
-      <div className="mt-3 flex items-baseline justify-between">
-        <span className={`num text-3xl font-medium ${pnlColor}`}>
-          {fmtSignedUSD(position.openPnl)}
+      <div className="mt-3 flex items-end justify-between rounded-xl border border-white/6 bg-white/[0.018] p-3">
+        <div>
+          <div className="text-[9px] text-zinc-600">Open P&amp;L</div>
+          <span className={`num mt-1 block text-[28px] font-medium leading-none ${pnlColor}`}>
+            {fmtSignedUSD(position.openPnl)}
+          </span>
+        </div>
+        <span className={`num rounded-full px-2 py-1 text-[10px] ${position.openPnl >= 0 ? "bg-bull/8 text-bull" : "bg-bear/8 text-bear"}`}>
+          {fmtPct(position.openPnlPct)}
         </span>
-        <span className={`num text-xs ${pnlColor}`}>{fmtPct(position.openPnlPct)}</span>
       </div>
 
-      <div className="num mt-4 grid grid-cols-2 gap-y-2.5 text-[12px]">
-        <div>
-          <div className="label text-[9px]!">Quantity</div>
-          <div className="mt-0.5 text-zinc-200">{fmtQty(position.qty)} ETH</div>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="mini-surface p-2.5">
+          <div className="text-[8.5px] text-zinc-600">Size</div>
+          <div className="num mt-1 text-[11px] text-zinc-200">{fmtQty(position.qty)} ETH</div>
         </div>
-        <div>
-          <div className="label text-[9px]!">Entry</div>
-          <div className="mt-0.5 text-zinc-200">{fmtPrice(position.entryPrice)}</div>
+        <div className="mini-surface p-2.5">
+          <div className="text-[8.5px] text-zinc-600">Entry</div>
+          <div className="num mt-1 text-[11px] text-zinc-200">${fmtPrice(position.entryPrice)}</div>
         </div>
-        <div>
-          <div className="label text-[9px]!">Take profit</div>
-          <div className="mt-0.5 text-bull">
-            {fmtPrice(position.targetPrice)}
-            <span className="ml-1.5 text-[10px] text-bull/60">{distTP.toFixed(2)}% away</span>
-          </div>
+        <div className="mini-surface border-bull/10! p-2.5">
+          <div className="text-[8.5px] text-zinc-600">Take profit · {distTP.toFixed(2)}% away</div>
+          <div className="num mt-1 text-[11px] text-bull">${fmtPrice(position.targetPrice)}</div>
         </div>
-        <div>
-          <div className="label text-[9px]!">Stop loss</div>
-          <div className="mt-0.5 text-bear">
-            {fmtPrice(position.stopPrice)}
-            <span className="ml-1.5 text-[10px] text-bear/60">{distSL.toFixed(2)}% away</span>
-          </div>
+        <div className="mini-surface border-bear/10! p-2.5">
+          <div className="text-[8.5px] text-zinc-600">Stop loss · {distSL.toFixed(2)}% away</div>
+          <div className="num mt-1 text-[11px] text-bear">${fmtPrice(position.stopPrice)}</div>
         </div>
       </div>
 
-      <div className="mt-3 border-t border-line pt-2.5">
-        <div className="label flex justify-between text-[9px]!">
-          <span>Risk at stop ≈ {fmtUSD(riskAtStop, 0)}</span>
-          <span>ATR14 {position.atr.toFixed(1)}</span>
-        </div>
+      <div className="mt-3 flex items-center justify-between text-[9px] text-zinc-600">
+        <span>Risk at stop ≈ <b className="num font-normal text-zinc-400">{fmtUSD(riskAtStop, 0)}</b></span>
+        <span>ATR14 <b className="num font-normal text-zinc-400">{position.atr.toFixed(1)}</b></span>
       </div>
     </div>
   );
@@ -176,9 +185,15 @@ export function FiltersAndRisk({ data }: { data: DashboardPayload }) {
   const m = data.market;
   const underwater = data.equity < data.peakEquity;
   return (
-    <div className="panel p-4">
-      <div className="label">Signal filters</div>
-      <div className="mt-2.5 grid grid-cols-2 gap-2">
+    <div className="panel overflow-hidden p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-[12px] font-semibold text-zinc-100">Signal checklist</div>
+          <div className="mt-0.5 text-[9px] text-zinc-600">What must line up before the bot acts</div>
+        </div>
+        <span className="friendly-chip text-zinc-500!">live checks</span>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <div className="rounded-lg border border-white/8 bg-white/2 px-2.5 py-2">
           <div className="label text-[8px]!">EMA-200 trend</div>
           <div className={`mt-1 flex items-center gap-1 text-[12px] font-medium ${m ? (m.aboveEma ? "text-bull" : "text-bear") : "text-zinc-500"}`}>
@@ -186,18 +201,21 @@ export function FiltersAndRisk({ data }: { data: DashboardPayload }) {
             {m ? (m.aboveEma ? "ABOVE" : "BELOW") : "—"}
           </div>
         </div>
-        <div className="rounded-lg border border-white/8 bg-white/2 px-2.5 py-2">
-          <div className="label text-[8px]!">Volume / MA30</div>
+        <div className="mini-surface px-2.5 py-2.5">
+          <div className="text-[8.5px] text-zinc-600">Volume / MA30</div>
           <div className={`num mt-1 text-[12px] font-medium ${m && m.participationOk ? "text-bull" : "text-zinc-400"}`}>
             {m ? `${m.volRatio.toFixed(2)}× ${m.participationOk ? "✓" : "✗"}` : "—"}
           </div>
         </div>
       </div>
 
-      <div className="label mt-4 flex items-center justify-between">
-        <span>Next-trade risk</span>
-        <span className="num text-sm text-zinc-100 normal-case tracking-normal">
-          {data.riskNow.toFixed(2)}% <span className="text-zinc-500">of equity</span>
+      <div className="mt-4 flex items-end justify-between border-t border-white/6 pt-3">
+        <div>
+          <div className="text-[10px] font-medium text-zinc-400">Next trade budget</div>
+          <div className="mt-0.5 text-[8.5px] text-zinc-600">after every active risk throttle</div>
+        </div>
+        <span className="num text-[17px] font-medium text-zinc-100">
+          {data.riskNow.toFixed(2)}<span className="text-[10px] text-zinc-500">%</span>
         </span>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -241,12 +259,35 @@ export function FiltersAndRisk({ data }: { data: DashboardPayload }) {
 /* Stat tiles                                                        */
 /* ---------------------------------------------------------------- */
 
-function Tile({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: string }) {
+function Tile({
+  label,
+  value,
+  sub,
+  tone,
+  accent = "bg-white/12",
+  emphasis = false,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: string;
+  accent?: string;
+  emphasis?: boolean;
+}) {
   return (
-    <div className="panel px-4 py-3">
-      <div className="label text-[9px]!">{label}</div>
-      <div className={`num mt-1.5 text-xl font-medium ${tone ?? "text-zinc-100"}`}>{value}</div>
-      {sub && <div className="num mt-0.5 text-[10px] text-zinc-500">{sub}</div>}
+    <div className="panel group relative overflow-hidden px-4 py-3">
+      <span
+        className={`absolute inset-x-0 top-0 h-px ${accent} opacity-50 transition-opacity duration-300 group-hover:opacity-100`}
+      />
+      <div className="label text-[8.5px]! tracking-[0.16em]!">{label}</div>
+      <div
+        className={`num mt-2 font-medium leading-none ${
+          emphasis ? "text-[26px]" : "text-[20px]"
+        } ${tone ?? "text-zinc-100"}`}
+      >
+        {value}
+      </div>
+      {sub && <div className="num mt-2 text-[10px] text-zinc-600">{sub}</div>}
     </div>
   );
 }
@@ -260,28 +301,50 @@ export function StatTiles({ data }: { data: DashboardPayload }) {
         label="Marked equity"
         value={fmtUSD(data.markedEquity, 0)}
         sub={`peak ${fmtUSD(data.peakEquity, 0)}`}
+        accent="bg-gradient-to-r from-vio/70 to-transparent"
+        emphasis
       />
       <Tile
         label="Net P&L"
         value={fmtSignedUSD(s.netPnl, 0)}
         sub={fmtPct(s.netPnlPct)}
         tone={s.netPnl >= 0 ? "text-bull" : "text-bear"}
+        accent={s.netPnl >= 0 ? "bg-gradient-to-r from-bull/70 to-transparent" : "bg-gradient-to-r from-bear/70 to-transparent"}
+        emphasis
       />
       <Tile
         label="Win rate"
         value={`${s.winRate.toFixed(1)}%`}
         sub={`${s.wins}W · ${s.losses}L`}
         tone={s.winRate >= 50 ? "text-bull" : "text-zinc-100"}
+        accent="bg-gradient-to-r from-bull/50 to-transparent"
       />
       <Tile
         label="Profit factor"
         value={s.profitFactor >= 99 ? "∞" : s.profitFactor.toFixed(2)}
-        sub={s.profitFactor >= 1.3 ? "robust" : ""}
+        sub={s.profitFactor >= 1.3 ? "robust" : s.profitFactor >= 1 ? "marginal" : "underwater"}
         tone={s.profitFactor >= 1 ? "text-bull" : "text-bear"}
+        accent="bg-gradient-to-r from-bull/50 to-transparent"
       />
-      <Tile label="Max drawdown" value={`${s.maxDrawdownPct.toFixed(2)}%`} sub="kill @ 9.0%" tone={ddTone} />
-      <Tile label="Avg R" value={`${s.avgR >= 0 ? "+" : ""}${s.avgR.toFixed(2)}`} sub="per closed trade" />
-      <Tile label="Trades" value={String(s.trades)} sub={`streak ${data.lossStreak > 0 ? `−${data.lossStreak}` : "0"}`} />
+      <Tile
+        label="Max drawdown"
+        value={`${s.maxDrawdownPct.toFixed(2)}%`}
+        sub="kill switch @ 9.0%"
+        tone={ddTone}
+        accent="bg-gradient-to-r from-amber/50 to-transparent"
+      />
+      <Tile
+        label="Avg R"
+        value={`${s.avgR >= 0 ? "+" : ""}${s.avgR.toFixed(2)}`}
+        sub="per closed trade"
+        accent="bg-gradient-to-r from-vio/50 to-transparent"
+      />
+      <Tile
+        label="Trades"
+        value={String(s.trades)}
+        sub={`loss streak ${data.lossStreak > 0 ? data.lossStreak : "0"}`}
+        accent="bg-gradient-to-r from-white/40 to-transparent"
+      />
     </div>
   );
 }

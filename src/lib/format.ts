@@ -32,13 +32,23 @@ export function fmtRatio(v: number): string {
   return v.toFixed(3);
 }
 
-/** 2026-02-14 18:00 UTC style */
-export function fmtTime(ms: number): string {
+const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+/** `21 AUG 2026` — full date with year (UTC) */
+export function fmtDate(ms: number): string {
   const d = new Date(ms);
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-  const hh = String(d.getUTCHours()).padStart(2, "0");
-  const mm = String(d.getUTCMinutes()).padStart(2, "0");
-  return `${String(d.getUTCDate()).padStart(2, "0")} ${months[d.getUTCMonth()]} ${hh}:${mm}`;
+  return `${String(d.getUTCDate()).padStart(2, "0")} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+/** `08:00` — time only (UTC) */
+export function fmtTimeOnly(ms: number): string {
+  const d = new Date(ms);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+/** `21 AUG 2026 08:00` — full timestamp with year (UTC) */
+export function fmtTime(ms: number): string {
+  return `${fmtDate(ms)} ${fmtTimeOnly(ms)}`;
 }
 
 export function fmtClock(ms: number): string {

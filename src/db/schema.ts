@@ -12,6 +12,9 @@ export const botState = pgTable("bot_state", {
   isRunning: boolean("is_running").notNull().default(false),
   killSwitch: boolean("kill_switch").notNull().default(false),
 
+  /** Telegram position-heartbeat cadence, in minutes (0 = disabled). */
+  heartbeatMins: integer("heartbeat_mins").notNull().default(30),
+
   equity: doublePrecision("equity").notNull().default(100000),
   initialCapital: doublePrecision("initial_capital").notNull().default(100000),
   peakEquity: doublePrecision("peak_equity").notNull().default(100000),

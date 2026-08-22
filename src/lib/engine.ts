@@ -34,7 +34,12 @@ type TradeRow = typeof trades.$inferSelect;
 async function ensureState(): Promise<StateRow> {
   await initDbTables();
   const rows = await db.select().from(botState).where(eq(botState.id, 1)).limit(1);
-  if (rows.length > 0) return rows[0];
+  if (rows.length > 0) {
+    // Keep the in-memory cadence in sync with the persisted setting on boot.
+    const m = rows[0].heartbeatMins;
+    if (typeof m === "number" && m >= 0) applyHeartbeatMins(m);
+    return rows[0];
+  }
   const inserted = await db
     .insert(botState)
     .values({ id: 1, updatedAt: Date.now() })
@@ -341,7 +346,12 @@ export type DashboardPayload = {
   serverTime: number;
   running: boolean;
   autopilot: { active: boolean; wakes: number; lastWake: number | null };
-  heartbeat: { lastAt: number | null; nextAt: number | null; intervalMs: number };
+  heartbeat: {
+    lastAt: number | null;
+    nextAt: number | null;
+    intervalMs: number;
+    mins: number;
+  };
   telegram: {
     configured: boolean;
     lastOkAt: number | null;
@@ -425,29 +435,59 @@ function autopilotWake(): AutopilotWake | null {
   return g.__vbAutopilotWake ?? null;
 }
 
-/** 30-minute Telegram heartbeat schedule, read from autopilot process state. */
-export const HEARTBEAT_INTERVAL_MS = 30 * 60 * 1000;
+/** Telegram heartbeat schedule, read from autopilot process state. */
+export const DEFAULT_HEARTBEAT_MINS = 30;
+export const HEARTBEAT_MIN_BOUND = 1;
+export const HEARTBEAT_MAX_BOUND = 240;
+
+type HeartbeatGlobals = {
+  __vbLastHeartbeat?: number;
+  __vbBootAt?: number;
+  __vbHeartbeatMins?: number;
+};
+
+const hbGlobal = () => globalThis as typeof globalThis & HeartbeatGlobals;
+
+/** Effective cadence in minutes (0 = disabled). Kept hot so the timer needs no DB read. */
+export function getHeartbeatMins(): number {
+  const v = hbGlobal().__vbHeartbeatMins;
+  return typeof v === "number" && v >= 0 ? v : DEFAULT_HEARTBEAT_MINS;
+}
+
+export function applyHeartbeatMins(mins: number): void {
+  hbGlobal().__vbHeartbeatMins = Math.max(0, Math.round(mins));
+}
 
 export function heartbeatSchedule(): {
   lastAt: number | null;
   nextAt: number | null;
   intervalMs: number;
+  mins: number;
 } {
-  const g = globalThis as typeof globalThis & {
-    __vbLastHeartbeat?: number;
-    __vbBootAt?: number;
-  };
+  const g = hbGlobal();
+  const mins = getHeartbeatMins();
+  const intervalMs = mins * 60_000;
   // Fall back to boot time so the countdown is meaningful before the first ping.
   const anchor =
-    g.__vbLastHeartbeat && g.__vbLastHeartbeat > 0
-      ? g.__vbLastHeartbeat
-      : g.__vbBootAt ?? 0;
-  if (!anchor) return { lastAt: null, nextAt: null, intervalMs: HEARTBEAT_INTERVAL_MS };
-  return {
-    lastAt: anchor,
-    nextAt: anchor + HEARTBEAT_INTERVAL_MS,
-    intervalMs: HEARTBEAT_INTERVAL_MS,
-  };
+    g.__vbLastHeartbeat && g.__vbLastHeartbeat > 0 ? g.__vbLastHeartbeat : g.__vbBootAt ?? 0;
+  if (!anchor || mins <= 0) {
+    return { lastAt: anchor || null, nextAt: null, intervalMs, mins };
+  }
+  return { lastAt: anchor, nextAt: anchor + intervalMs, intervalMs, mins };
+}
+
+/** Persist a new cadence (0 disables heartbeats) and apply it immediately. */
+export async function setHeartbeatMins(mins: number): Promise<number> {
+  const clamped = Math.min(
+    HEARTBEAT_MAX_BOUND,
+    Math.max(0, Math.round(Number.isFinite(mins) ? mins : DEFAULT_HEARTBEAT_MINS))
+  );
+  await initDbTables();
+  await db.update(botState).set({ heartbeatMins: clamped }).where(eq(botState.id, 1));
+  applyHeartbeatMins(clamped);
+  // Restart the countdown so the new cadence takes effect right away.
+  hbGlobal().__vbLastHeartbeat = Date.now();
+  return clamped;
 }
 
 /**

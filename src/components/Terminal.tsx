@@ -2,7 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldAlert, Wifi, WifiOff, Zap } from "lucide-react";
+import {
+  BarChart3,
+  ChartCandlestick,
+  HeartPulse,
+  History,
+  Play,
+  ShieldAlert,
+  Sparkles,
+  WalletCards,
+  Wifi,
+  WifiOff,
+  Zap,
+} from "lucide-react";
 import type { DashboardPayload } from "@/lib/engine";
 import { fmtPrice } from "@/lib/format";
 import dynamic from "next/dynamic";
@@ -105,6 +117,13 @@ export default function Terminal() {
     !!data && data.neverRan && !data.running && !busy && !dismissedStandby;
 
   const lastCandle = data?.candles.length ? data.candles[data.candles.length - 1] : null;
+  const hour = new Date(now).getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const deskMessage = data?.position
+    ? `Your bot is riding a ${data.position.dir === 1 ? "long" : "short"} ${data.position.regime.toLowerCase()} setup.`
+    : data?.running
+      ? "Your bot is watching ETH and waiting patiently for the next clean breakout."
+      : "Your paper bot is paused. Start whenever you’re ready.";
 
   return (
     <div className="relative z-10 flex min-h-screen flex-col">
@@ -116,6 +135,7 @@ export default function Terminal() {
         notifyState={notifyState}
         notifyError={notifyError}
         onTestNotify={testNotify}
+        onRefresh={() => void refresh()}
       />
 
       {/* kill-switch banner */}
@@ -154,39 +174,70 @@ export default function Terminal() {
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-[1600px] flex-1 space-y-2 p-3 lg:p-4">
-        <div className="grid grid-cols-12 gap-2">
+      <main className="mx-auto w-full max-w-[1640px] flex-1 space-y-3 px-3 py-4 sm:px-5 lg:px-7 lg:py-5">
+        {/* Friendly desk introduction */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="dashboard-welcome"
+        >
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="welcome-orb">
+              <Sparkles size={15} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-[18px] font-semibold tracking-[-0.025em] text-zinc-100 sm:text-[21px]">
+                {greeting} <span className="text-vio">—</span> here’s your bot at a glance.
+              </h1>
+              <p className="mt-1 text-[11px] text-zinc-500 sm:text-[12px]">{deskMessage}</p>
+            </div>
+          </div>
+          <div className="hidden items-center gap-2 sm:flex">
+            <span className="friendly-chip">
+              <WalletCards size={11} /> Paper money only
+            </span>
+            <span className="friendly-chip">
+              <ShieldAlert size={11} /> 9% safety stop
+            </span>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-12 gap-3">
           {/* main chart */}
           <motion.section
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="panel relative col-span-12 flex h-[300px] flex-col overflow-hidden md:h-[440px] xl:col-span-8"
+            className="panel relative col-span-12 flex h-[330px] flex-col overflow-hidden md:h-[470px] xl:col-span-8"
           >
             <div className="pointer-events-none absolute left-0 right-0 top-0 h-px overflow-hidden">
               <div className="sweep h-px w-1/3 bg-gradient-to-r from-transparent via-vio/60 to-transparent" />
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-2">
-              <span className="text-[11px] font-semibold tracking-[0.18em] text-zinc-300">
-                ETHUSDT · 2H
-              </span>
-              {lastCandle && (
-                <span className="num text-[10px] text-zinc-500">
-                  O <span className="text-zinc-300">{fmtPrice(lastCandle.o)}</span>
-                  {"  "}H <span className="text-bull">{fmtPrice(lastCandle.h)}</span>
-                  {"  "}L <span className="text-bear">{fmtPrice(lastCandle.l)}</span>
-                  {"  "}C <span className="text-zinc-300">{fmtPrice(lastCandle.c)}</span>
-                </span>
-              )}
-              {data?.market && (
-                <span className="num ml-auto text-[10px] text-zinc-500">
-                  ATR14 <span className="text-zinc-300">{data.market.atrFast.toFixed(1)}</span>
-                  {" · "}EMA200 <span className="text-zinc-300">{fmtPrice(data.market.ema200)}</span>
-                </span>
-              )}
-              {busy && (
-                <span className="label text-[9px]! text-vio!">replaying market history…</span>
-              )}
+            <div className="section-head">
+              <div className="flex items-center gap-3">
+                <div className="section-icon text-vio"><ChartCandlestick size={15} /></div>
+                <div>
+                  <div className="text-[12px] font-semibold text-zinc-100">Live ETH market</div>
+                  <div className="mt-0.5 text-[9px] text-zinc-600">2-hour candles · entries, exits and active levels</div>
+                </div>
+              </div>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-2.5">
+                {lastCandle && (
+                  <span className="num hidden text-[9px] text-zinc-600 sm:inline">
+                    O <span className="text-zinc-300">{fmtPrice(lastCandle.o)}</span>
+                    {" · "}H <span className="text-bull">{fmtPrice(lastCandle.h)}</span>
+                    {" · "}L <span className="text-bear">{fmtPrice(lastCandle.l)}</span>
+                    {" · "}C <span className="text-zinc-300">{fmtPrice(lastCandle.c)}</span>
+                  </span>
+                )}
+                {data?.market && (
+                  <span className="num rounded-full border border-white/7 bg-white/[0.025] px-2.5 py-1 text-[9px] text-zinc-500">
+                    ATR <span className="text-zinc-300">{data.market.atrFast.toFixed(1)}</span>
+                    {" · "}EMA <span className="text-zinc-300">{fmtPrice(data.market.ema200)}</span>
+                  </span>
+                )}
+                {busy && <span className="friendly-chip text-vio!">Replaying history…</span>}
+              </div>
             </div>
             <div className="relative min-h-0 flex-1">
               <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-4">
@@ -197,8 +248,14 @@ export default function Terminal() {
               {data && data.candles.length > 0 ? (
                 <CandleChart candles={data.candles} trades={data.trades} position={data.position} />
               ) : (
-                <div className="label flex h-full items-center justify-center text-[10px]!">
-                  Loading market data…
+                <div className="flex h-full items-end gap-[3px] px-5 pb-6 opacity-60">
+                  {Array.from({ length: 46 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="skeleton flex-1"
+                      style={{ height: `${18 + ((i * 37) % 58)}%` }}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -209,7 +266,7 @@ export default function Terminal() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className="col-span-12 grid content-start gap-2 md:grid-cols-3 xl:col-span-4 xl:grid-cols-1"
+            className="col-span-12 grid content-start gap-3 md:grid-cols-3 xl:col-span-4 xl:grid-cols-1"
           >
             <PositionTicket position={data?.position ?? null} price={data?.price ?? null} />
             <RegimeGauge market={data?.market ?? null} />
@@ -217,16 +274,22 @@ export default function Terminal() {
           </motion.aside>
         </div>
 
-        {/* stat tiles */}
+        {/* performance strip */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
+          className="space-y-2"
         >
+          <div className="flex items-center gap-2 px-1">
+            <BarChart3 size={12} className="text-bull" />
+            <span className="text-[10px] font-medium text-zinc-400">Performance pulse</span>
+            <span className="text-[9px] text-zinc-700">the numbers that matter, at a glance</span>
+          </div>
           {data && <StatTiles data={data} />}
         </motion.div>
 
-        <div className="grid grid-cols-12 gap-2">
+        <div className="grid grid-cols-12 gap-3">
           {/* equity curve */}
           <motion.section
             initial={{ opacity: 0, y: 14 }}
@@ -256,28 +319,34 @@ export default function Terminal() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="panel col-span-12 h-[320px] overflow-hidden xl:col-span-5"
+            className="panel col-span-12 h-[350px] overflow-hidden xl:col-span-5"
           >
-            <div className="flex items-center justify-between border-b border-line px-4 py-2">
-              <span className="text-[11px] font-semibold tracking-[0.18em] text-zinc-300">
-                TRADE LOG
-              </span>
-              <span className="label text-[9px]!">{data?.stats.trades ?? 0} closed</span>
+            <div className="section-head">
+              <div className="flex items-center gap-3">
+                <div className="section-icon text-amber"><History size={15} /></div>
+                <div>
+                  <div className="text-[12px] font-semibold text-zinc-100">Trade story</div>
+                  <div className="mt-0.5 text-[9px] text-zinc-600">Every closed position, newest first</div>
+                </div>
+              </div>
+              <span className="friendly-chip">{data?.stats.trades ?? 0} chapters</span>
             </div>
-            <div className="h-[calc(100%-37px)]">
+            <div className="h-[calc(100%-57px)]">
               <TradesTable trades={data?.trades ?? []} />
             </div>
           </motion.section>
         </div>
       </main>
 
-      <footer className="label flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5 text-[9px]! lg:px-6">
+      <footer className="mx-auto flex w-full max-w-[1640px] flex-wrap items-center justify-between gap-3 px-5 py-5 text-[9px] text-zinc-600 lg:px-7">
+        <div className="flex items-center gap-2">
+          <div className="grid h-6 w-6 place-items-center rounded-lg bg-vio/8 text-vio">α</div>
+          <span>
+            $100k paper account · 1–2% risk band · 2× leverage cap · 9% safety stop
+          </span>
+        </div>
         <span>
-          Paper engine · 100k USD virtual · ATR regimes 15/60/80 · TP/SL 4.0×1.48 / 4.6×0.8 ·
-          risk band 1–2% · lev cap 2× · server autopilot ticks 2H closes + sends 30m Telegram position updates
-        </span>
-        <span>
-          Data: Binance spot klines · Charts: TradingView Lightweight Charts · Not financial advice
+          Binance market data · Telegram updates every {data?.heartbeat.mins ?? 30}m · Educational, not financial advice
         </span>
       </footer>
 
@@ -288,65 +357,63 @@ export default function Terminal() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.4 } }}
-            className="fixed inset-0 z-50 grid place-items-center bg-ink/85 p-4 backdrop-blur-md"
+            className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/80 p-4 backdrop-blur-xl"
           >
-            <div className="relative max-w-2xl text-center">
-              <div className="pointer-events-none absolute left-1/2 top-1/2 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-vio/10 blur-[120px]" />
-              <motion.div
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+              className="popover-card relative my-4 w-full max-w-[680px] overflow-hidden p-6 text-center sm:p-9"
+            >
+              <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-vio/12 blur-[80px]" />
+              <div className="pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-bull/8 blur-[80px]" />
+
+              <div className="relative mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-gradient-to-br from-vio/20 to-bull/10 shadow-[0_16px_45px_-20px_rgba(139,124,247,0.8)]">
+                <Zap size={23} className="fill-vio/20 text-vio" />
+                <span className="absolute -right-1 -top-1 rounded-full bg-bull px-1.5 py-0.5 text-[8px] font-bold text-ink">α</span>
+              </div>
+              <div className="mt-5 text-[10px] font-medium tracking-[0.14em] text-vio">MEET YOUR PAPER TRADING CO-PILOT</div>
+              <h1 className="mx-auto mt-3 max-w-lg text-[34px] font-semibold leading-[1.05] tracking-[-0.045em] text-white sm:text-[48px]">
+                Patient on quiet days.<br />Ready when ETH moves.
+              </h1>
+              <p className="mx-auto mt-4 max-w-xl text-[12px] leading-relaxed text-zinc-500">
+                Volbreak watches ETHUSDT every two hours, waits for volatility to expand, and manages a virtual $100,000 account with the exact v3.3c rules.
+              </p>
+
+              <div className="mx-auto mt-6 grid max-w-[560px] grid-cols-2 gap-2 text-left sm:grid-cols-3">
+                {[
+                  ["3 market moods", "ATR 1.02 · 1.05 · 1.10"],
+                  ["Clear exits", "ATR-native TP and SL"],
+                  ["Gentle sizing", "1–2% risk per trade"],
+                  ["Safety first", "9% drawdown stop"],
+                  ["True costs", "Fees + 10-tick slip"],
+                  ["No real money", "Paper mode only"],
+                ].map(([k, v]) => (
+                  <div key={k} className="mini-surface p-3">
+                    <div className="text-[10px] font-medium text-zinc-300">{k}</div>
+                    <div className="num mt-1 text-[8.5px] text-zinc-600">{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => void action("start")}
+                disabled={busy}
+                className="primary-action mx-auto mt-7 h-11! px-6! text-[11px]!"
               >
-                <div className="label text-[10px]! text-vio!">Binance paper trading engine</div>
-                <h1 className="mt-3 text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
-                  Adaptive Volatility
-                  <br />
-                  <span className="bg-gradient-to-r from-bull via-zinc-100 to-vio bg-clip-text text-transparent">
-                    Breakout v3.3c
-                  </span>
-                </h1>
-                <p className="num mx-auto mt-4 max-w-xl text-[12px] leading-relaxed text-zinc-400">
-                  ETHUSDT · 2H — three ATR-expansion regimes trade channel breakouts of 15/60/80 bars,
-                  sized by drawdown-aware throttles clamped to a hard 1–2% risk band, with failure
-                  exits, continuation re-entries and a 9% equity kill switch.
-                </p>
-
-                <div className="num mx-auto mt-6 grid max-w-lg grid-cols-3 gap-2 text-left">
-                  {[
-                    ["REGIMES", "1.02 / 1.05 / 1.10"],
-                    ["TP · SL", "1.48×4.0 / 0.8×4.6 ATR"],
-                    ["RISK BAND", "1.00–2.00% / trade"],
-                    ["DD BACKSTOP", "9.0% of peak"],
-                    ["COMMISSION", "0.05% / side"],
-                    ["LEVERAGE CAP", "2.0× notional"],
-                  ].map(([k, v]) => (
-                    <div key={k} className="rounded-lg border border-white/8 bg-white/3 px-3 py-2">
-                      <div className="label text-[8px]!">{k}</div>
-                      <div className="mt-1 text-[11px] text-zinc-200">{v}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => void action("start")}
-                  disabled={busy}
-                  className="group mx-auto mt-8 flex items-center gap-3 rounded-xl border border-bull/40 bg-bull/12 px-8 py-4 text-[13px] font-semibold tracking-[0.2em] text-bull transition-all hover:bg-bull/20 hover:shadow-[0_0_50px_rgba(53,242,166,0.3)] disabled:opacity-40"
-                >
-                  <Zap size={16} className="fill-current" />
-                  {busy ? "REPLAYING…" : "IGNITE ENGINE"}
-                </button>
-                <div className="label mt-3 text-[9px]!">
-                  First ignition replays the last 2 years of 2H closes (~8,700 bars),
-                  then trades live bar-by-bar
-                </div>
-                <button
-                  onClick={() => setDismissedStandby(true)}
-                  className="label mt-5 text-[9px]! text-zinc-600! underline-offset-4 hover:underline"
-                >
-                  Explore the terminal first
-                </button>
-              </motion.div>
-            </div>
+                <Play size={13} className="fill-current" />
+                {busy ? "Building your two-year story…" : "Start paper trading"}
+              </button>
+              <p className="mt-3 text-[9px] text-zinc-600">
+                First start replays two years of 2H closes, then follows every new candle live.
+              </p>
+              <button
+                onClick={() => setDismissedStandby(true)}
+                className="mt-5 text-[10px] text-zinc-600 transition-colors hover:text-zinc-300"
+              >
+                Look around first →
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
