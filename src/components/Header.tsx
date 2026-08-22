@@ -169,17 +169,17 @@ export default function Header({ data, now, busy, onAction, notifyState, notifyE
           className="label hidden items-center gap-1.5 rounded-full border border-white/8 bg-white/3 px-2.5 py-1 text-zinc-400! lg:flex"
           title={
             data.telegram.lastHeartbeatAt
-              ? `Last 30-min Telegram heartbeat: ${new Date(data.telegram.lastHeartbeatAt).toUTCString()} (${data.telegram.heartbeatsSent} sent this session)`
-              : "No heartbeat sent yet this session"
+              ? `Last Telegram heartbeat sent ${fmtClock(data.telegram.lastHeartbeatAt)} UTC (${data.telegram.heartbeatsSent} this session)`
+              : "First heartbeat pending — counts down from server boot"
           }
         >
           <Heart size={11} className={data.telegram.lastHeartbeatAt ? "text-bull" : "text-zinc-600"} />
           30m ping
-          {data.telegram.lastHeartbeatAt && (
-            <span className="num text-[9px] text-zinc-500">
-              {fmtClock(data.telegram.lastHeartbeatAt)}
-            </span>
-          )}
+          <span className="num text-[9px] text-zinc-200">
+            {data.heartbeat.nextAt
+              ? fmtCountdown(data.heartbeat.nextAt - now)
+              : "—"}
+          </span>
         </span>
       )}
 

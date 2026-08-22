@@ -13,6 +13,7 @@ const g = globalThis as typeof globalThis & {
   __vbAutopilot?: ReturnType<typeof setInterval>;
   __vbAutopilotWake?: { wakes: number; lastWake: number };
   __vbLastHeartbeat?: number;
+  __vbBootAt?: number;
 };
 
 export function startAutopilot(): void {
@@ -20,6 +21,7 @@ export function startAutopilot(): void {
 
   g.__vbAutopilotWake = g.__vbAutopilotWake ?? { wakes: 0, lastWake: 0 };
   g.__vbLastHeartbeat = g.__vbLastHeartbeat ?? 0;
+  g.__vbBootAt = g.__vbBootAt ?? Date.now();
 
   // Wake frequently; `tickIfNeeded` short-circuits cheaply unless a new
   // 2H close is pending.

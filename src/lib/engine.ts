@@ -341,6 +341,7 @@ export type DashboardPayload = {
   serverTime: number;
   running: boolean;
   autopilot: { active: boolean; wakes: number; lastWake: number | null };
+  heartbeat: { lastAt: number | null; nextAt: number | null; intervalMs: number };
   telegram: {
     configured: boolean;
     lastOkAt: number | null;
@@ -422,6 +423,31 @@ function autopilotWake(): AutopilotWake | null {
     __vbAutopilotWake?: AutopilotWake;
   };
   return g.__vbAutopilotWake ?? null;
+}
+
+/** 30-minute Telegram heartbeat schedule, read from autopilot process state. */
+export const HEARTBEAT_INTERVAL_MS = 30 * 60 * 1000;
+
+export function heartbeatSchedule(): {
+  lastAt: number | null;
+  nextAt: number | null;
+  intervalMs: number;
+} {
+  const g = globalThis as typeof globalThis & {
+    __vbLastHeartbeat?: number;
+    __vbBootAt?: number;
+  };
+  // Fall back to boot time so the countdown is meaningful before the first ping.
+  const anchor =
+    g.__vbLastHeartbeat && g.__vbLastHeartbeat > 0
+      ? g.__vbLastHeartbeat
+      : g.__vbBootAt ?? 0;
+  if (!anchor) return { lastAt: null, nextAt: null, intervalMs: HEARTBEAT_INTERVAL_MS };
+  return {
+    lastAt: anchor,
+    nextAt: anchor + HEARTBEAT_INTERVAL_MS,
+    intervalMs: HEARTBEAT_INTERVAL_MS,
+  };
 }
 
 /**
@@ -578,6 +604,7 @@ export async function getDashboard(): Promise<DashboardPayload> {
       wakes: wake?.wakes ?? 0,
       lastWake: wake && wake.lastWake > 0 ? wake.lastWake : null,
     },
+    heartbeat: heartbeatSchedule(),
     telegram: telegramStatus(),
     killSwitch: row.killSwitch,
     neverRan: row.lastProcessedTime === null,
