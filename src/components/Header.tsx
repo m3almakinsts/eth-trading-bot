@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Pause, RotateCcw, ArrowUpRight, ArrowDownRight, Server, Bell, X } from "lucide-react";
+import { Play, Pause, RotateCcw, ArrowUpRight, ArrowDownRight, Server, Bell, X, Heart } from "lucide-react";
 import type { DashboardPayload } from "@/lib/engine";
 import { CFG } from "@/lib/strategy";
 import { fmtClock, fmtCountdown, fmtPct, fmtPrice } from "@/lib/format";
@@ -161,6 +161,25 @@ export default function Header({ data, now, busy, onAction, notifyState, notifyE
         >
           <Server size={11} />
           Autopilot 24/7
+        </span>
+      )}
+
+      {data?.running && (
+        <span
+          className="label hidden items-center gap-1.5 rounded-full border border-white/8 bg-white/3 px-2.5 py-1 text-zinc-400! lg:flex"
+          title={
+            data.telegram.lastHeartbeatAt
+              ? `Last 30-min Telegram heartbeat: ${new Date(data.telegram.lastHeartbeatAt).toUTCString()} (${data.telegram.heartbeatsSent} sent this session)`
+              : "No heartbeat sent yet this session"
+          }
+        >
+          <Heart size={11} className={data.telegram.lastHeartbeatAt ? "text-bull" : "text-zinc-600"} />
+          30m ping
+          {data.telegram.lastHeartbeatAt && (
+            <span className="num text-[9px] text-zinc-500">
+              {fmtClock(data.telegram.lastHeartbeatAt)}
+            </span>
+          )}
         </span>
       )}
 

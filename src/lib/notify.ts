@@ -7,10 +7,15 @@
  */
 import type { ClosedTrade, EntryEvent } from "./strategy";
 
-type TgState = { lastOkAt: number | null; lastError: string | null };
+type TgState = {
+  lastOkAt: number | null;
+  lastError: string | null;
+  lastHeartbeatAt: number | null;
+  heartbeatsSent: number;
+};
 
 const g = globalThis as typeof globalThis & { __vbTg?: TgState };
-if (!g.__vbTg) g.__vbTg = { lastOkAt: null, lastError: null };
+if (!g.__vbTg) g.__vbTg = { lastOkAt: null, lastError: null, lastHeartbeatAt: null, heartbeatsSent: 0 };
 
 export function telegramConfigured(): boolean {
   return Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID);
@@ -21,10 +26,18 @@ export function telegramStatus() {
     configured: telegramConfigured(),
     lastOkAt: g.__vbTg!.lastOkAt,
     lastError: g.__vbTg!.lastError,
+    lastHeartbeatAt: g.__vbTg!.lastHeartbeatAt,
+    heartbeatsSent: g.__vbTg!.heartbeatsSent,
   };
 }
 
-async function sendTelegram(text: string): Promise<{ ok: boolean; error: string | null }> {
+/** Marks a heartbeat as delivered — used for dashboard diagnostics. */
+export function markHeartbeatSent(): void {
+  g.__vbTg!.lastHeartbeatAt = Date.now();
+  g.__vbTg!.heartbeatsSent += 1;
+}
+
+export async function sendTelegram(text: string): Promise<{ ok: boolean; error: string | null }> {
   if (!telegramConfigured()) return { ok: false, error: "TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set" };
   const token = process.env.TELEGRAM_BOT_TOKEN!;
   const chatId = process.env.TELEGRAM_CHAT_ID!;
@@ -172,7 +185,9 @@ export async function notifyHeartbeat(d: HeartbeatPayload): Promise<{ ok: boolea
   const mins = minsLeft % 60;
   lines.push(`\n<i>Next 2H bar close in ${hrs}h ${mins}m</i>`);
 
-  return sendTelegram(lines.join("\n"));
+  const res = await sendTelegram(lines.join("\n"));
+  if (res.ok) markHeartbeatSent();
+  return res;
 }
 
 export async function sendTelegramTest(): Promise<{ ok: boolean; error: string | null }> {

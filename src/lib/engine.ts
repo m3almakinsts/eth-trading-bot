@@ -22,7 +22,7 @@ import {
   type Snapshot,
 } from "./strategy";
 import { fetchKlines, fetchKlinesHistory, fetchTicker } from "./binance";
-import { notifyEntry, notifyExit, notifyHeartbeat, telegramStatus } from "./notify";
+import { notifyEntry, notifyExit, notifyHeartbeat, sendTelegram, telegramStatus } from "./notify";
 
 type StateRow = typeof botState.$inferSelect;
 type TradeRow = typeof trades.$inferSelect;
@@ -341,7 +341,13 @@ export type DashboardPayload = {
   serverTime: number;
   running: boolean;
   autopilot: { active: boolean; wakes: number; lastWake: number | null };
-  telegram: { configured: boolean; lastOkAt: number | null; lastError: string | null };
+  telegram: {
+    configured: boolean;
+    lastOkAt: number | null;
+    lastError: string | null;
+    lastHeartbeatAt: number | null;
+    heartbeatsSent: number;
+  };
   killSwitch: boolean;
   neverRan: boolean;
   bootstrap: boolean;
@@ -617,8 +623,15 @@ export async function getDashboard(): Promise<DashboardPayload> {
  * and sends a 30-min heartbeat message to Telegram.
  */
 export async function sendHeartbeat(): Promise<{ ok: boolean; error: string | null }> {
+  let d: DashboardPayload;
   try {
-    const d = await getDashboard();
+    d = await getDashboard();
+  } catch {
+    // Market feed or DB hiccup — still prove the autopilot is alive.
+    return sendTelegram(`⏱ <b>VOLBREAK α · keep-alive</b>\nAutopilot running, but market data is unreachable right now. Retrying on the next 2H bar.`);
+  }
+
+  try {
     if (!d.running && !d.killSwitch) {
       return { ok: false, error: "Engine not running" };
     }
